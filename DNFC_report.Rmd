@@ -1,0 +1,91 @@
+---
+title: "DNFC Report"
+author: "Matilda Stevenson"
+date: '`r Sys.Date()`'
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{DNFC Report}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+```{r}
+# Load required libraries
+library(ALA4R)
+library(googleAnalyticsR)
+library(dplyr)
+library(jsonlite)
+library(googleAuthR)
+
+```
+
+
+```{r}
+# read in latest data
+today <- format(Sys.Date(), format="%Y%m%d")
+data_path <- file.path('/data/daily_downloads', paste0("1200", ".json"))
+# get yesterday
+if (!file.exists(data_path)) {
+  yesterday <- format(Sys.Date() - 1, format="%Y%m%d")
+  data_path <- file.path('/data/daily_downloads', paste0(yesterday, "1200", ".json"))
+}
+
+dsh_data <- read_json(data_path)
+```
+
+Occurrence records in the ALA today
+```{r}
+records <- ala_counts()
+records
+```
+
+Datasets with records
+```{r}
+datasets <- dsh_data$datasets$dataAvailableCount[[1]]
+datasets
+```
+
+Total images
+```{r}
+# for some reason this isn't in dashboard data
+images <- fromJSON("https://images.ala.org.au/ws/search")$totalImageCount
+images
+```
+
+
+Species with records
+```{r}
+species <- dsh_data$taxaCounts$speciesWithRecords[[1]]
+species
+```
+
+Download events in the past month
+```{r}
+events_month <- fromJSON(
+  "https://logger.ala.org.au/service/reasonBreakdown?eventId=1002")$thisMonth$events
+
+events_total <- dsh_data$occurrenceDownloadByReason[[13]]$Events
+
+paste0("Data download events from the 1st of this month to now: ", events_month)
+paste0("Total data download events: ", events_total)
+```
+
+Number of users per day 
+```{r}
+users_per_day <- read.csv('/data/google_analytics/ga_data.csv')
+
+# average users per day over the past month (and round)
+avg_users_per_day <- round(mean(users_per_day$X1dayUsers))
+
+paste0("In the past month the average number of users per day was ",
+       avg_users_per_day)
+
+```
+
+## Report outputs
+```{r}
+paste0("ALA Data Holdings – exceeds ", records,
+       " biodiversity occurrence records across more than ", datasets, " datasets for ",
+       species, " species and over ", images, " images")
+paste0("ALA Usage - ", events_total, " data download events (total) and ", avg_users_per_day,
+       " users per day to ALA web sites on average over the past month")
+```
