@@ -1,0 +1,44 @@
+---
+title: "ALA Dashboard statistics"
+author: "Matilda Stevenson"
+date: '`r Sys.Date()`'
+output: rmarkdown::html_vignette
+---
+
+# Dashboard data
+
+```{r}
+library(dplyr)
+library(remotes)
+library(ggplot2)
+library(tidyr)
+library(jsonlite)
+library(stringr)
+install_github("matilda2812/alaplot@main")
+```
+
+Pull in species layer counts from dashboard
+```{r}
+files <- list.files(path = '/data/daily_downloads')
+
+layer_counts <- bind_rows(lapply(files, function(f) {
+  path <- file.path('/data/daily_downloads', f)
+  data <- fromJSON(path)
+  date <- as.Date(str_split(f, "\\.")[[1]][1], format = "%Y%m%d%H%M")
+  cbind(date = date, as.data.frame(data$spatialLayers$groups))
+}))
+
+```
+
+Plot species layers
+```{r}
+
+# convert data to long format
+data <- layer_counts %>%
+  pivot_longer(!date, names_to = "layer_type", values_to = "count")
+
+plt <- ggplot(data = data) +
+  geom_line(mapping = aes(x = date, y = count, colour = layer_type)) +
+  labs(title = "Number of spatial layers in the ALA over time") + ala_style()
+plt
+```
