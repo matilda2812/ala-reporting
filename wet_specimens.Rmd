@@ -1,0 +1,64 @@
+---
+title: "ALA wet specimen records"
+author: "Matilda Stevenson"
+date: '`r Sys.Date()`'
+output: rmarkdown::html_vignette
+---
+
+
+```{r}
+library("remotes")
+remotes::install_github("AtlasOfLivingAustralia/koala@main")
+library(dplyr)
+```
+
+Download all occurrence records of preserved vertebrates in the ALA
+```{r}
+preserved_occ <- ala_occurrences(taxa = ala_taxa("Chordata"),
+                                 filters = select_filters(basisOfRecord = "PreservedSpecimen"),
+                                 columns = select_columns(group = "basic", "preparations", "species_group", "class", "data_provider", "collection_name", "institution_name"),
+                                 mint_doi = TRUE)
+
+head(preserved_occ)
+```
+
+
+Filter by wet-preserved and formalin-preserved specimens
+```{r}
+wet_keywords <- c("formalin", "alcohol", "etoh", "ethanol", "wet", "spirit", "blood")
+
+# search preparation field of occurrence records for wet preparation-related words
+wet_specimens <- preserved_occ %>%
+  dplyr::filter(grepl(paste(wet_keywords, collapse = "|"), preparations, ignore.case = TRUE))
+
+message("Number of wet specimens is ", nrow(wet_specimens))
+
+# Formalin-preserved specimens
+formalin_specimens <- preserved_occ %>%
+  dplyr::filter(grepl("formalin", preparations, ignore.case = TRUE))
+
+message("Number of formalin-preserved specimens is ", nrow(formalin_specimens))
+
+```
+
+Total number of preserved specimens in the ALA
+```{r}
+ala_counts(taxa = ala_taxa("Chordata"),
+           filters = select_filters(basisOfRecord = "PreservedSpecimen"))
+
+```
+
+Number of wet specimens by collection
+```{r}
+wet_specimens %>% count(collection_name)
+```
+
+Number of wet specimens by institution
+```{r}
+wet_specimens %>% count(institution_name)
+```
+
+Number of wet specimens by lifeform
+```{r}
+wet_specimens %>% count(class)
+```
